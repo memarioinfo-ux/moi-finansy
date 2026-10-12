@@ -1,4 +1,4 @@
-name: Build Moi Finansy Android APK
+name: Build Moi Finansy SAFE TEST APK
 
 on:
   push:
@@ -84,11 +84,11 @@ jobs:
               namespace 'com.alina.budget'
               compileSdk 35
               defaultConfig {
-                  applicationId 'com.alina.budget'
+                  applicationId 'com.alina.budget.safetest'
                   minSdk 26
                   targetSdk 34
-                  versionCode 21
-                  versionName '0.20.4-glossy17'
+                  versionCode 22
+                  versionName '0.20.4-glossy17-safe-test'
               }
               buildTypes {
                   release { minifyEnabled false }
@@ -130,18 +130,18 @@ jobs:
           XML
           cat > app/src/main/res/values/strings.xml <<'XML'
           <resources>
-              <string name="app_name">Мои финансы</string>
-              <string name="listener_name">Мои финансы — банковские уведомления</string>
+              <string name="app_name">Мои финансы Тест</string>
+              <string name="listener_name">Мои финансы Тест — банковские уведомления</string>
           </resources>
           XML
 
       - name: Compile real Android APK
         run: gradle :app:assembleDebug --no-daemon --stacktrace
 
-      - name: Upload APK
+      - name: Upload separately installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: Moi-Finansy-Android-APK
+          name: Moi-Finansy-Safe-Test-Android-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
