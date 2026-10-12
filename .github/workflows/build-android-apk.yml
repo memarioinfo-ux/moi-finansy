@@ -3,7 +3,7 @@ name: Build Moi Finansy Android APK
 on:
   push:
     paths:
-      - "android/java-sources.tar.gz.b64"
+      - "java-sources.tar.gz.b64"
       - ".github/workflows/build-android-apk.yml"
       - "index.html"
       - "icon-512.png"
@@ -40,8 +40,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test -s android/java-sources.tar.gz.b64
-          base64 -d android/java-sources.tar.gz.b64 | tar -xz
+          test -s java-sources.tar.gz.b64
+          base64 -d java-sources.tar.gz.b64 | tar -xz
           mkdir -p app/src/main/assets app/src/main/res/drawable-nodpi app/src/main/res/values
           cp index.html app/src/main/assets/app.html
           cp icon-512.png app/src/main/res/drawable-nodpi/ic_launcher.png
