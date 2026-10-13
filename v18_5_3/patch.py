@@ -203,6 +203,9 @@ edit(html,
           if(item && item.fingerprint) acknowledgedNative.push(String(item.fingerprint));
         }''')
 edit(html,
+    "  const parsed=parseBelarusbankSms(item && item.sender || 'Mbank', item && item.text || '');\n  return applyParsedSmsSilent(parsed,{requireLinked:true});",
+    "  const parsed=parseBelarusbankSms(item && item.sender || 'Mbank', item && item.text || '');\n  parsed.nativeFingerprint=String(item && item.fingerprint || '');\n  return applyParsedSmsSilent(parsed,{requireLinked:true});")
+edit(html,
     '''    unresolvedAddedIds.forEach(id => {
       if(typeof window.notifyUnclassifiedSavedTx === 'function') window.notifyUnclassifiedSavedTx(id);
     });''',
