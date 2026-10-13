@@ -1,7 +1,9 @@
-name: Build Moi Finansy v18 Navigation and Categories APK
+name: Build Moi Finansy v18 Stable Release
 
 on:
   push:
+    branches:
+      - stable-v18
     paths:
       - "java-sources.tar.gz.b64"
       - ".github/workflows/build-android-apk.yml"
@@ -84,11 +86,11 @@ jobs:
               namespace 'com.alina.budget'
               compileSdk 35
               defaultConfig {
-                  applicationId 'com.alina.budget.safev18'
+                  applicationId 'com.alina.finances.personal'
                   minSdk 26
                   targetSdk 34
-                  versionCode 23
-                  versionName '0.20.4-glossy18-safe-test'
+                  versionCode 1
+                  versionName '1.0.0'
               }
               buildTypes {
                   release { minifyEnabled false }
@@ -98,7 +100,7 @@ jobs:
           cat > app/src/main/AndroidManifest.xml <<'XML'
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-            <application android:allowBackup="true" android:label="@string/app_name"
+            <application android:allowBackup="false" android:label="@string/app_name"
                 android:icon="@drawable/ic_launcher" android:roundIcon="@drawable/ic_launcher"
                 android:supportsRtl="true" android:theme="@android:style/Theme.Material.Light.NoActionBar"
                 android:usesCleartextTraffic="false">
@@ -130,8 +132,8 @@ jobs:
           XML
           cat > app/src/main/res/values/strings.xml <<'XML'
           <resources>
-              <string name="app_name">Мои финансы v18</string>
-              <string name="listener_name">Мои финансы v18 — банковские уведомления</string>
+              <string name="app_name">Мои финансы</string>
+              <string name="listener_name">Мои финансы — банковские уведомления</string>
           </resources>
           XML
 
@@ -144,12 +146,24 @@ jobs:
           python3 build_patch_v18.py
 
       - name: Compile real Android APK
-        run: gradle :app:assembleDebug --no-daemon --stacktrace
+        run: gradle :app:assembleRelease --no-daemon --stacktrace
 
-      - name: Upload separately installable APK
+      - name: Align release APK and package signing tool
+        shell: bash
+        run: |
+          set -euo pipefail
+          BUILD_TOOLS="$ANDROID_HOME/build-tools/35.0.0"
+          "$BUILD_TOOLS/zipalign" -f -p 4 app/build/outputs/apk/release/app-release-unsigned.apk release-unsigned-aligned.apk
+          cp "$BUILD_TOOLS/lib/apksigner.jar" apksigner.jar
+          test -s release-unsigned-aligned.apk
+          test -s apksigner.jar
+
+      - name: Upload unsigned APK for private signing
         uses: actions/upload-artifact@v4
         with:
-          name: Moi-Finansy-v18-Android-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: Moi-Finansy-v18-Unsigned-Release
+          path: |
+            release-unsigned-aligned.apk
+            apksigner.jar
           if-no-files-found: error
           retention-days: 30
