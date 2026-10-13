@@ -1,4 +1,4 @@
-name: Build Moi Finansy SAFE TEST APK
+name: Build Moi Finansy v18 Navigation and Categories APK
 
 on:
   push:
@@ -84,11 +84,11 @@ jobs:
               namespace 'com.alina.budget'
               compileSdk 35
               defaultConfig {
-                  applicationId 'com.alina.budget.safetest'
+                  applicationId 'com.alina.budget.safev18'
                   minSdk 26
                   targetSdk 34
-                  versionCode 22
-                  versionName '0.20.4-glossy17-safe-test'
+                  versionCode 23
+                  versionName '0.20.4-glossy18-safe-test'
               }
               buildTypes {
                   release { minifyEnabled false }
@@ -130,10 +130,18 @@ jobs:
           XML
           cat > app/src/main/res/values/strings.xml <<'XML'
           <resources>
-              <string name="app_name">Мои финансы Тест</string>
-              <string name="listener_name">Мои финансы Тест — банковские уведомления</string>
+              <string name="app_name">Мои финансы v18</string>
+              <string name="listener_name">Мои финансы v18 — банковские уведомления</string>
           </resources>
           XML
+
+      - name: Add navigation and merchant-category rules
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp v18_category.js app/src/main/assets/v18_category.js
+          cp v18_navigation.js app/src/main/assets/v18_navigation.js
+          python3 build_patch_v18.py
 
       - name: Compile real Android APK
         run: gradle :app:assembleDebug --no-daemon --stacktrace
@@ -141,7 +149,7 @@ jobs:
       - name: Upload separately installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: Moi-Finansy-Safe-Test-Android-APK
+          name: Moi-Finansy-v18-Android-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
