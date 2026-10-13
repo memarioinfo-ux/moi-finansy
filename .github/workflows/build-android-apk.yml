@@ -7,6 +7,9 @@ on:
       - ".github/workflows/build-android-apk.yml"
       - "index.html"
       - "icon-512.png"
+      - "v19_insync_parser.js"
+      - "v19_insync_ui.js"
+      - "patch_v19.py"
   workflow_dispatch:
 
 permissions:
