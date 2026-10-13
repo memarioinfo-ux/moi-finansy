@@ -109,6 +109,6 @@
     if(record.date&&record.time){const target=Date.parse(record.date+'T'+record.time+':00');if(Number.isFinite(target))score+=Math.max(0,30-Math.abs(ms-target)/60000/5);}
     return {id:tx.id,score,tx};
   }
-  function candidates(record,transactions,accounts){const map=new Map(accounts.map(a=>[a.id,a]));return transactions.map(tx=>compare(record,tx,map.get(tx.account))).filter(Boolean).sort((a,b)=>b.score-a.score).slice(0,35);}
+  function candidates(record,transactions,accounts){const map=new Map(accounts.map(a=>[a.id,a]));return transactions.map(tx=>compare(record,tx,map.get(tx.account))).filter(Boolean).sort((a,b)=>b.score-a.score || new Date(b.tx.dateTime||b.tx.date).getTime()-new Date(a.tx.dateTime||a.tx.date).getTime()).slice(0,35);}
   return {parse,candidates,extractAmount,merchantFromText,extractCard,extractDate,extractTime,money,eligible};
 });
