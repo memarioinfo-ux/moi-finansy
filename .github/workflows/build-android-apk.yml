@@ -1,4 +1,4 @@
-name: Build Moi Finansy v18 Navigation and Categories APK
+name: Build Moi Finansy v19 InSync Reconciliation APK
 
 on:
   push:
@@ -84,11 +84,11 @@ jobs:
               namespace 'com.alina.budget'
               compileSdk 35
               defaultConfig {
-                  applicationId 'com.alina.budget.safev18'
+                  applicationId 'com.alina.budget.safev19'
                   minSdk 26
                   targetSdk 34
-                  versionCode 23
-                  versionName '0.20.4-glossy18-safe-test'
+                  versionCode 24
+                  versionName '0.20.4-glossy19-insync-safe-test'
               }
               buildTypes {
                   release { minifyEnabled false }
@@ -130,8 +130,8 @@ jobs:
           XML
           cat > app/src/main/res/values/strings.xml <<'XML'
           <resources>
-              <string name="app_name">Мои финансы v18</string>
-              <string name="listener_name">Мои финансы v18 — банковские уведомления</string>
+              <string name="app_name">Мои финансы v19</string>
+              <string name="listener_name">Мои финансы v19 — банковские уведомления</string>
           </resources>
           XML
 
@@ -143,13 +143,23 @@ jobs:
           cp v18_navigation.js app/src/main/assets/v18_navigation.js
           python3 build_patch_v18.py
 
+      - name: Add local InSync matching screen
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp v19_insync_parser.js app/src/main/assets/v19_insync_parser.js
+          cp v19_insync_ui.js app/src/main/assets/v19_insync_ui.js
+          python3 patch_v19.py
+          node --check app/src/main/assets/v19_insync_parser.js
+          node --check app/src/main/assets/v19_insync_ui.js
+
       - name: Compile real Android APK
         run: gradle :app:assembleDebug --no-daemon --stacktrace
 
       - name: Upload separately installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: Moi-Finansy-v18-Android-APK
+          name: Moi-Finansy-v19-InSync-Android-APK
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
