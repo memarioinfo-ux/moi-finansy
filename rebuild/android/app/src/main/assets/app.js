@@ -2,6 +2,7 @@
 const $=id=>document.getElementById(id);
 let state={accounts:[],transactions:[]};
 let editId="";
+let renameAccountId="";
 let sourceEventId="";
 let kind="expense";
 const labels={expense:"Расход",income:"Доход",transfer:"Перевод"};
@@ -41,7 +42,13 @@ function renderAccounts(){
  for(const a of state.accounts){
   const row=node("div",undefined,"account-row");
   const info=node("div"),title=node("div",a.name,"account-name"),currency=node("div",a.currency,"subtitle");
-  info.append(title,currency);row.append(info,node("strong",fmt(a.balanceMinor,a.currency),"account-amount"));host.append(row);
+  info.append(title,currency);
+  const rename=node("button","Изменить","account-rename");
+  rename.type="button";
+  rename.setAttribute("aria-label","Переименовать счёт "+a.name);
+  rename.onclick=()=>openRenameAccount(a.id);
+  row.append(info,node("strong",fmt(a.balanceMinor,a.currency),"account-amount"),rename);
+  host.append(row);
  }
 }
 function renderSelects(){
@@ -145,6 +152,14 @@ function switchTab(tab){
 function openAccount(){
  $("accountForm").reset();$("accountDialog").showModal();
 }
+function openRenameAccount(id){
+ const chosen=account(id);
+ if(!chosen){toast("Счёт не найден");return;}
+ renameAccountId=id;
+ $("renameAccountName").value=chosen.name;
+ $("renameAccountDialog").showModal();
+ $("renameAccountName").focus();
+}
 function selectAccounts(){
  for(const id of ["txAccount","txFrom","txTo"])$(id).replaceChildren(...state.accounts.map(a=>new Option(a.name+" · "+a.currency,a.id)));
  if(state.accounts.length>1)$("txTo").selectedIndex=1;
@@ -210,6 +225,17 @@ $("accountForm").addEventListener("submit",e=>{
  try{
   refresh(call("createAccount",$("accountName").value,$("accountCurrency").value,$("accountInitialBalance").value));
   $("accountDialog").close();toast("Счёт создан");
+ }catch(error){toast(error.message);}
+});
+$("renameAccountForm").addEventListener("submit",e=>{
+ e.preventDefault();
+ if(!renameAccountId)return;
+ try{
+  const result=call("renameAccount",renameAccountId,$("renameAccountName").value);
+  renameAccountId="";
+  $("renameAccountDialog").close();
+  refresh(result);
+  toast("Название обновлено");
  }catch(error){toast(error.message);}
 });
 $("transactionForm").addEventListener("submit",e=>{
