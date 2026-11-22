@@ -102,4 +102,35 @@ class NotificationInboxTest {
             fail("Ignored message must not be usable for booking")
         } catch (_: IllegalArgumentException) { }
     }
+
+    @Test
+    fun currencyMismatchKeepsEventOpen() {
+        val card = repository.createAccount("Долларовая карта", "USD", "100,00")
+            .getJSONArray("accounts").getJSONObject(0).getString("id")
+        val dao = database.financeDao()
+        dao.captureNotification(message("n1"))
+        try {
+            repository.saveTransaction(operation(card, "n1"))
+            fail("BYN notification must not silently affect a USD account")
+        } catch (expected: IllegalArgumentException) {
+            assertTrue(expected.message?.contains("Валюта счёта") == true)
+        }
+        assertTrue(dao.transactions().isEmpty())
+        assertEquals("needs_review", dao.notification("n1")?.status)
+    }
+
+    @Test
+    fun overflowingLedgerMustAlsoRollBackEventStatus() {
+        val card = repository.createAccount("Большой счёт", "BYN", "90071992547409,90")
+            .getJSONArray("accounts").getJSONObject(0).getString("id")
+        val dao = database.financeDao()
+        dao.captureNotification(message("n1"))
+        try {
+            repository.saveTransaction(operation(card, "n1").put("amount", "0,02"))
+            fail("Unsafe accounting result must not be persisted")
+        } catch (_: IllegalArgumentException) { }
+        assertTrue(dao.transactions().isEmpty())
+        assertEquals("needs_review", dao.notification("n1")?.status)
+        assertEquals(1, dao.unreviewedNotificationCount())
+    }
 }
