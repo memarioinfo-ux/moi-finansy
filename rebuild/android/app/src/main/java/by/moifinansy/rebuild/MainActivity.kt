@@ -163,6 +163,19 @@ class MainActivity : Activity() {
         }.start()
     }
 
+    @Suppress("DEPRECATION")
+    override fun onBackPressed() {
+        if (!::webView.isInitialized) {
+            super.onBackPressed()
+            return
+        }
+        webView.evaluateJavascript(
+            "(function() { return window.handleNativeBack ? window.handleNativeBack() : false; })()"
+        ) { handled ->
+            if (handled != "true") finish()
+        }
+    }
+
     override fun onDestroy() {
         webView.removeJavascriptInterface("FinanceNative")
         webView.destroy()
@@ -199,6 +212,11 @@ class MainActivity : Activity() {
         @JavascriptInterface
         fun deleteTransaction(id: String): String = respond {
             repository.deleteTransaction(id)
+        }
+
+        @JavascriptInterface
+        fun exitApp() {
+            activity.runOnUiThread { activity.finish() }
         }
 
         @JavascriptInterface
