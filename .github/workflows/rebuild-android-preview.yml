@@ -48,7 +48,7 @@ jobs:
 
       - name: Assemble isolated debug APK
         working-directory: rebuild/android
-        run: gradle --no-daemon :app:assembleDebug
+        run: gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug
 
       - name: Upload preview
         uses: actions/upload-artifact@v4
