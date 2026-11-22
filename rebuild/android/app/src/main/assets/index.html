@@ -128,6 +128,19 @@
     </form>
   </dialog>
 
+  <dialog id="renameAccountDialog" class="sheet">
+    <form id="renameAccountForm" class="sheet-form">
+      <div class="dialog-head">
+        <h2>Название счёта</h2>
+        <button type="button" class="dismiss" data-close="renameAccountDialog" aria-label="Закрыть">×</button>
+      </div>
+      <label for="renameAccountName">Новое название</label>
+      <input id="renameAccountName" maxlength="60" required autocomplete="off">
+      <p class="form-help">Переименование не изменяет валюту, начальный остаток и историю операций.</p>
+      <button class="save-button" type="submit">Сохранить название</button>
+    </form>
+  </dialog>
+
   <dialog id="transactionDialog" class="sheet">
     <form id="transactionForm" class="sheet-form">
       <div class="dialog-head"><h2 id="transactionDialogTitle">Новая операция</h2><button type="button" class="dismiss" data-close="transactionDialog" aria-label="Закрыть">×</button></div>
