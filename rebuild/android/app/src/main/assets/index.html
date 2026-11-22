@@ -44,7 +44,7 @@
       </section>
 
       <nav class="tabs" aria-label="Разделы приложения">
-        <button class="tab active" data-tab="history" type="button">История</button>
+        <button class="tab active" data-tab="history" type="button">Все</button>
         <button class="tab" data-tab="accounts" type="button">Счета</button>
         <button class="tab" data-tab="analytics" type="button">Аналитика</button>
         <button class="tab" data-tab="notifications" type="button">Банки <span id="notificationCount"></span></button>
@@ -61,6 +61,10 @@
             <option value="income">Доходы</option>
             <option value="transfer">Переводы</option>
           </select>
+        </div>
+        <div class="history-filter-info">
+          <span id="historyFilterStatus" class="subtitle">Все сохранённые операции</span>
+          <button id="clearHistoryFilters" class="text-button hidden" type="button">Сбросить фильтры</button>
         </div>
         <div id="historyList" class="entries"></div>
       </section>
