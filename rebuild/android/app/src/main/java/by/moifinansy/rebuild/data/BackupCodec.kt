@@ -38,7 +38,7 @@ class BackupCodec(private val database: FinanceDatabase) {
     }
 
     @Synchronized
-    fun exportJson(): String = database.runInTransaction {
+    fun exportJson(): String = database.runInTransaction(java.util.concurrent.Callable {
         // All three tables must belong to the same database snapshot.
         val accounts = JSONArray()
         for (a in dao.accounts()) accounts.put(
@@ -77,7 +77,7 @@ class BackupCodec(private val database: FinanceDatabase) {
             "Архив слишком большой для безопасного восстановления"
         }
         archive
-    }
+    })
 
     /**
      * Restore is strictly create-only into an empty NEW app database.
