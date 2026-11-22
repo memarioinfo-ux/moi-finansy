@@ -36,6 +36,6 @@ object BankNotificationPolicy {
         // transaction messages enter the local review queue.
         if (!transactionWords.containsMatchIn(combined)) return false
         return currencyAmount.containsMatchIn(combined) ||
-            Regex("""\\d{1,9}[.,]\\d{2}(?![\\d.])""").containsMatchIn(combined)
+            Regex("""\d{1,9}[.,]\d{2}(?![\d.])""").containsMatchIn(combined)
     }
 }
