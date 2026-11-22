@@ -2,6 +2,7 @@
 const $=id=>document.getElementById(id);
 let state={accounts:[],transactions:[]};
 let editId="";
+let sourceEventId="";
 let kind="expense";
 const labels={expense:"Расход",income:"Доход",transfer:"Перевод"};
 const fmt=(minor,currency)=>new Intl.NumberFormat("ru-RU",{minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(minor)/100)+" "+currency;
@@ -32,7 +33,7 @@ function render(){
  function totals(kind){const out={};for(const t of monthly.filter(x=>x.kind===kind)){const c=account(t.accountId)?.currency||"BYN";out[c]=(out[c]||0)+Number(t.amountMinor);}return Object.entries(out).map(([c,v])=>fmt(v,c)).join(" / ")||"0,00 BYN";}
  $("monthlyIncome").textContent=totals("income");
  $("monthlyExpense").textContent=totals("expense");
- renderAccounts();renderTransactions();renderAnalytics();renderSelects();
+ renderAccounts();renderTransactions();renderAnalytics();renderSelects();renderNotifications();
 }
 function renderAccounts(){
  const host=$("accountList");host.replaceChildren();
@@ -87,8 +88,52 @@ function renderAnalytics(){
   line.append(node("span",category),node("strong",fmt(value,currency)));host.append(line);
  }
 }
+
+function renderNotifications(){
+ const count=Number(state.unreviewedNotifications||0);
+ $("notificationCount").textContent=count>0?" · "+count:"";
+ const access=$("notificationAccessState");
+ try{
+  const enabled=Boolean(window.FinanceNative?.getNotificationAccess?.());
+  access.textContent=enabled?"Разрешён":"Не разрешён";
+  access.classList.toggle("access-ok",enabled);
+ }catch(e){access.textContent="Недоступно";access.classList.remove("access-ok");}
+ const list=$("notificationList");
+ list.replaceChildren();
+ const events=state.notifications||[];
+ $("notificationInboxHint").textContent=count+" ожидают проверки";
+ if(!events.length){
+  list.append(node("div","Новых банковских уведомлений нет. После выдачи доступа они появятся здесь, если банк отправит поддерживаемое уведомление об операции.","empty"));
+  return;
+ }
+ for(const event of events){
+  const box=node("article",undefined,"notification-card");
+  const meta=node("div",undefined,"notification-meta");
+  meta.append(
+   node("span",event.packageName.includes("alfabank")?"Альфа-Банк":"Беларусбанк"),
+   node("time",new Date(event.receivedAt).toLocaleString("ru-RU"))
+  );
+  const title=node("strong",event.title||"Банковская операция","notification-title");
+  const body=node("p",event.body,"notification-body");
+  const actions=node("div",undefined,"notification-actions");
+  const add=node("button","＋ Внести операцию","notification-add");
+  add.type="button";
+  add.onclick=()=>openTransaction("expense",null,event.id);
+  const ignore=node("button","Не операция","notification-ignore");
+  ignore.type="button";
+  ignore.onclick=()=>{
+   if(!confirm("Пометить это сообщение как не относящееся к учёту? Оно останется в локальном журнале."))return;
+   try{refresh(call("ignoreNotification",event.id));toast("Сообщение оставлено в журнале");}
+   catch(e){toast(e.message);}
+  };
+  actions.append(add,ignore);
+  box.append(meta,title,body,actions);
+  list.append(box);
+ }
+}
+
 function switchTab(tab){
- for(const name of ["history","accounts","analytics"])$(name).classList.toggle("hidden",name!==tab);
+ for(const name of ["history","accounts","analytics","notifications"])$(name).classList.toggle("hidden",name!==tab);
  for(const b of document.querySelectorAll("[data-tab]"))b.classList.toggle("active",b.dataset.tab===tab);
 }
 function openAccount(){
@@ -106,11 +151,14 @@ function updateKind(value){
  for(const b of document.querySelectorAll("[data-kind]"))b.classList.toggle("selected",b.dataset.kind===kind);
  $("transactionDialogTitle").textContent=editId?"Изменить операцию":"Новая операция";
 }
-function openTransaction(value="expense",tx=null){
+function openTransaction(value="expense",tx=null,eventId=""){
  if(!state.accounts.length){toast("Сначала создайте счёт");switchTab("accounts");return;}
  editId=tx?.id||"";
+ sourceEventId=eventId;
  $("transactionForm").reset();selectAccounts();updateKind(value);
- $("txDate").value=localDate(tx?.occurredAt||Date.now());
+ const event=(state.notifications||[]).find(n=>n.id===eventId);
+ $("txDate").value=localDate(tx?.occurredAt||event?.receivedAt||Date.now());
+ if(event && !tx)$("txNote").value=event.title.slice(0,100);
  $("deleteTransaction").classList.toggle("hidden",!tx);
  if(tx){
   $("txAmount").value=(Number(tx.amountMinor)/100).toFixed(2).replace(".",",");
@@ -132,11 +180,11 @@ $("accountForm").addEventListener("submit",e=>{
 $("transactionForm").addEventListener("submit",e=>{
  e.preventDefault();
  try{
-  const data={id:editId,kind,amount:$("txAmount").value,occurredAt:new Date($("txDate").value).getTime(),note:$("txNote").value,category:$("txCategory").value};
+  const data={id:editId,kind,amount:$("txAmount").value,occurredAt:new Date($("txDate").value).getTime(),note:$("txNote").value,category:$("txCategory").value,sourceNotificationId:sourceEventId};
   if(kind==="transfer"){data.fromAccountId=$("txFrom").value;data.toAccountId=$("txTo").value;}
   else data.accountId=$("txAccount").value;
   refresh(call("saveTransaction",JSON.stringify(data)));
-  $("transactionDialog").close();toast("Операция сохранена");
+  $("transactionDialog").close();sourceEventId="";toast("Операция сохранена");
  }catch(error){toast(error.message);}
 });
 $("deleteTransaction").onclick=()=>{
@@ -146,7 +194,12 @@ $("deleteTransaction").onclick=()=>{
 };
 $("newAccount").onclick=openAccount;
 $("newTransaction").onclick=()=>openTransaction();
-for(const tab of document.querySelectorAll("[data-tab]"))tab.onclick=()=>switchTab(tab.dataset.tab);
+for(const tab of document.querySelectorAll("[data-tab]"))tab.onclick=()=>{
+ if(tab.dataset.tab==="notifications"){
+  try{refresh();}catch(e){toast(e.message);}
+ }
+ switchTab(tab.dataset.tab);
+};
 for(const b of document.querySelectorAll("[data-kind]"))b.onclick=()=>updateKind(b.dataset.kind);
 for(const b of document.querySelectorAll("[data-close]"))b.onclick=()=>$(b.dataset.close).close();
 $("accountFilter").onchange=renderTransactions;$("kindFilter").onchange=renderTransactions;
@@ -177,5 +230,19 @@ window.onNativeBackupEvent=(type,message)=>{
  }
  toast(message||({exported:"Резервная копия сохранена",imported:"Данные восстановлены",error:"Ошибка резервной копии"}[type]||"Операция завершена"));
 };
+
+$("refreshNotifications").onclick=()=>{
+ try{refresh();toast("Журнал обновлён");}catch(e){toast(e.message);}
+};
+$("enableBankNotifications").onclick=()=>{
+ try{
+  if(!window.FinanceNative?.openNotificationSettings)throw Error("Нужен Android");
+  window.FinanceNative.openNotificationSettings();
+ }catch(e){toast(e.message);}
+};
+window.onNativeResume=()=>{
+ try{refresh();}catch(e){toast(e.message);}
+};
+
 try{refresh();}catch(e){toast("Ошибка загрузки: "+e.message);}
 
