@@ -68,6 +68,14 @@
           <button class="text-button" id="newAccount" type="button">＋ Добавить</button>
         </div>
         <div id="accountList" class="account-list"></div>
+        <div class="backup-panel">
+          <h3>Резервная копия</h3>
+          <p>Экспорт сохраняет счета, историю, удалённые записи и журнал уведомлений в отдельный файл. Восстановление допускается только в пустую тестовую базу.</p>
+          <div class="backup-buttons">
+            <button id="exportBackup" type="button">↥ Сохранить JSON</button>
+            <button id="importBackup" type="button">↧ Восстановить</button>
+          </div>
+        </div>
       </section>
 
       <section class="panel hidden" id="analytics" aria-label="Аналитика">
