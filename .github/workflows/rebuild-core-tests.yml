@@ -1,11 +1,6 @@
 name: Rebuild v2 core tests
 
 on:
-  push:
-    branches: [rebuild-v2]
-    paths:
-      - 'rebuild/**'
-      - '.github/workflows/rebuild-core-tests.yml'
   workflow_dispatch:
 
 jobs:
