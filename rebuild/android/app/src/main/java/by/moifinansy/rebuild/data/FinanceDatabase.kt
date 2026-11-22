@@ -65,6 +65,12 @@ interface FinanceDao {
     @Query("SELECT * FROM transactions WHERE deletedAt IS NULL ORDER BY occurredAt DESC, id ASC")
     fun transactions(): List<TransactionEntity>
 
+    @Query("SELECT * FROM transactions ORDER BY createdAt ASC, id ASC")
+    fun allTransactionsForBackup(): List<TransactionEntity>
+
+    @Query("SELECT * FROM notification_events ORDER BY receivedAt ASC, id ASC")
+    fun allNotificationEvents(): List<NotificationEventEntity>
+
     @Query("SELECT * FROM accounts WHERE id = :id LIMIT 1")
     fun account(id: String): AccountEntity?
 
