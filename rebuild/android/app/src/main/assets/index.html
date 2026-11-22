@@ -135,11 +135,12 @@
         <button class="type-option" data-kind="income" type="button">Доход</button>
         <button class="type-option" data-kind="transfer" type="button">Перевод</button>
       </div>
+      <p id="txSuggestionNotice" class="suggestion-note hidden"></p>
       <label for="txAmount">Сумма</label>
       <input id="txAmount" placeholder="0,00" inputmode="decimal" required>
       <div id="singleAccountGroup">
         <label for="txAccount">Счёт</label>
-        <select id="txAccount"></select>
+        <select id="txAccount" required></select>
       </div>
       <div id="transferGroups" class="hidden">
         <label for="txFrom">Откуда</label>
