@@ -150,6 +150,27 @@ for(const tab of document.querySelectorAll("[data-tab]"))tab.onclick=()=>switchT
 for(const b of document.querySelectorAll("[data-kind]"))b.onclick=()=>updateKind(b.dataset.kind);
 for(const b of document.querySelectorAll("[data-close]"))b.onclick=()=>$(b.dataset.close).close();
 $("accountFilter").onchange=renderTransactions;$("kindFilter").onchange=renderTransactions;
+
+// User-initiated backup via Android Storage Access Framework.
+// No file data is passed through the JavaScript bridge.
+$("exportBackup").onclick=()=>{
+ try{
+  if(!window.FinanceNative?.exportBackup)throw Error("Экспорт доступен только в Android");
+  window.FinanceNative.exportBackup();
+ }catch(e){toast(e.message);}
+};
+$("importBackup").onclick=()=>{
+ try{
+  if(!window.FinanceNative?.importBackup)throw Error("Восстановление доступно только в Android");
+  window.FinanceNative.importBackup();
+ }catch(e){toast(e.message);}
+};
+window.onNativeBackupEvent=(type,message)=>{
+ if(type==="imported"){
+  try{refresh();switchTab("accounts");}catch(e){toast("Данные восстановлены, но не удалось обновить экран: "+e.message);return;}
+ }
+ toast(message||({exported:"Резервная копия сохранена",imported:"Данные восстановлены",error:"Ошибка резервной копии"}[type]||"Операция завершена"));
+};
 try{refresh();}catch(e){toast("Ошибка загрузки: "+e.message);}
 
 window.onNativeBackupEvent = (type, message) => {
