@@ -1,11 +1,6 @@
 name: Android rebuild v2 preview
 
 on:
-  push:
-    branches: [rebuild-v2]
-    paths:
-      - 'rebuild/android/**'
-      - '.github/workflows/rebuild-android-preview.yml'
   workflow_dispatch:
 
 concurrency:
