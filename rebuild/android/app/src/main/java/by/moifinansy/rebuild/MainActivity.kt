@@ -3,6 +3,8 @@ package by.moifinansy.rebuild
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.provider.Settings
+import androidx.core.app.NotificationManagerCompat
 import android.webkit.JavascriptInterface
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -63,6 +65,20 @@ class MainActivity : Activity() {
             loadUrl("https://appassets.androidplatform.net/assets/index.html")
         }
         setContentView(webView)
+    }
+
+    private fun hasNotificationAccess(): Boolean =
+        NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName)
+
+    override fun onResume() {
+        super.onResume()
+        if (::webView.isInitialized) {
+            webView.evaluateJavascript("window.onNativeResume?.()", null)
+        }
+    }
+
+    private fun showNotificationSettings() {
+        startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
     }
 
     private fun openBackupPicker(export: Boolean) {
@@ -178,6 +194,19 @@ class MainActivity : Activity() {
         @JavascriptInterface
         fun deleteTransaction(id: String): String = respond {
             repository.deleteTransaction(id)
+        }
+
+        @JavascriptInterface
+        fun getNotificationAccess(): Boolean = activity.hasNotificationAccess()
+
+        @JavascriptInterface
+        fun openNotificationSettings() {
+            activity.runOnUiThread { activity.showNotificationSettings() }
+        }
+
+        @JavascriptInterface
+        fun ignoreNotification(id: String): String = respond {
+            repository.ignoreNotification(id)
         }
 
         @JavascriptInterface
