@@ -8,6 +8,10 @@ on:
       - '.github/workflows/rebuild-android-preview.yml'
   workflow_dispatch:
 
+concurrency:
+  group: rebuild-android-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
