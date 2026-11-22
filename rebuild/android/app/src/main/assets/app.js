@@ -64,6 +64,11 @@ function filteredTransactions(){
 }
 function renderTransactions(){
  const host=$("historyList");host.replaceChildren();const items=filteredTransactions();
+ const activeFilters=Boolean($("accountFilter").value||$("kindFilter").value);
+ $("historyFilterStatus").textContent=activeFilters
+  ?"Показано "+items.length+" из "+state.transactions.length+" операций · включены фильтры"
+  :"Все сохранённые операции: "+state.transactions.length;
+ $("clearHistoryFilters").classList.toggle("hidden",!activeFilters);
  if(!items.length){host.append(node("div","Пока нет операций по выбранным условиям.","empty"));return;}
  let previousDay="";
  for(const t of items){
@@ -287,6 +292,11 @@ for(const tab of document.querySelectorAll("[data-tab]"))tab.onclick=()=>{
 for(const b of document.querySelectorAll("[data-kind]"))b.onclick=()=>updateKind(b.dataset.kind);
 for(const b of document.querySelectorAll("[data-close]"))b.onclick=()=>$(b.dataset.close).close();
 $("accountFilter").onchange=renderTransactions;$("kindFilter").onchange=renderTransactions;
+$("clearHistoryFilters").onclick=()=>{
+ $("accountFilter").value="";
+ $("kindFilter").value="";
+ renderTransactions();
+};
 
 // User-initiated backup via Android Storage Access Framework.
 // No file data is passed through the JavaScript bridge.
