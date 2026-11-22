@@ -45,6 +45,7 @@
         <button class="tab active" data-tab="history" type="button">История</button>
         <button class="tab" data-tab="accounts" type="button">Счета</button>
         <button class="tab" data-tab="analytics" type="button">Аналитика</button>
+        <button class="tab" data-tab="notifications" type="button">Банки <span id="notificationCount"></span></button>
       </nav>
 
       <section class="panel" id="history" aria-label="История операций">
@@ -83,6 +84,27 @@
         <div id="analyticsList" class="analytics-list"></div>
         <div class="privacy-note">Расчёты ведутся отдельно для каждой валюты. Внутренние переводы не считаются доходами или расходами.</div>
       </section>
+      <section class="panel hidden" id="notifications" aria-label="Банковские уведомления">
+        <div class="panel-heading">
+          <h2>Банковские уведомления</h2>
+          <button id="refreshNotifications" class="text-button" type="button">Обновить</button>
+        </div>
+        <div class="access-card">
+          <div class="access-status">
+            <span>Доступ к уведомлениям</span>
+            <strong id="notificationAccessState">Проверяем…</strong>
+          </div>
+          <p>Доступ выдаётся в настройках Android. Приложение сохраняет только сообщения об операциях из известных банковских приложений, не читает переписки и не отправляет данные в интернет.</p>
+          <button id="enableBankNotifications" type="button">Настроить доступ в Android</button>
+        </div>
+        <div class="inbox-header">
+          <h3>Требуют проверки</h3>
+          <span id="notificationInboxHint" class="subtitle"></span>
+        </div>
+        <div id="notificationList" class="notification-list"></div>
+        <p class="privacy-note">Сообщения не влияют на остатки, пока вы не создадите операцию вручную. При повторном получении одинакового события оно не создаёт вторую операцию.</p>
+      </section>
+
     </main>
 
     <footer class="footer">
