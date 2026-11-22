@@ -196,7 +196,14 @@ class FinanceRepository(private val database: FinanceDatabase) {
         }
         val jsonNotifications = JSONArray()
         for (n in dao.notificationsForReview()) {
+            val detected = BankPushParser.suggest(n.packageName, n.title, n.body)
+            val suggestion = if (detected == null) JSONObject.NULL else JSONObject()
+                .put("kind", detected.kind)
+                .put("amountMinor", detected.amountMinor)
+                .put("currency", detected.currency)
+                .put("cardLast4", detected.cardLast4)
             jsonNotifications.put(JSONObject()
+                .put("suggestion", suggestion)
                 .put("id", n.id)
                 .put("packageName", n.packageName)
                 .put("title", n.title)
