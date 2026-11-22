@@ -90,6 +90,20 @@ class FinanceRepository(private val database: FinanceDatabase) {
             accountOrThrow(accountId)
         }
 
+        if (event != null) {
+            val detected = BankPushParser.suggest(event.packageName, event.title, event.body)
+            if (detected != null) {
+                val selectedAccount = if (kind == "transfer") {
+                    accountOrThrow(requireNotNull(fromAccountId))
+                } else {
+                    accountOrThrow(requireNotNull(accountId))
+                }
+                require(selectedAccount.currency == detected.currency) {
+                    "Валюта счёта не совпадает с валютой уведомления. Для конвертации создайте отдельную ручную операцию."
+                }
+            }
+        }
+
         val old = if (id.isBlank()) null else dao.transaction(id)
         if (id.isNotBlank()) {
             require(old != null && old.deletedAt == null) { "Операция для изменения не найдена" }
