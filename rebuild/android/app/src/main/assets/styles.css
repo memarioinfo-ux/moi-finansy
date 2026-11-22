@@ -113,3 +113,10 @@ h1{font-size:22px;line-height:1.15;letter-spacing:-.6px;margin:3px 0 0;font-weig
 .day-heading{color:#91a5c0;font-size:12px;font-weight:700;margin:18px 0 6px}
 .analytics-row{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#131e34;border:1px solid #2b3b55;border-radius:14px;margin:9px 0;padding:14px;font-size:13px}
 .analytics-row strong{white-space:nowrap;color:#adf5db}
+
+.backup-panel{border:1px solid #344c5c;background:linear-gradient(135deg,#182d3a,#172339);border-radius:17px;padding:18px;margin-top:19px}
+.backup-panel h3{font-size:15px;margin:0 0 8px}
+.backup-panel p{margin:0 0 14px;font-size:12px;line-height:1.55;color:#a5bad0}
+.backup-buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.backup-buttons button{border:1px solid #3d7166;border-radius:11px;background:#244e48;color:#a5f2d8;font-weight:700;font-size:12px;padding:12px 6px}
+.backup-buttons button:last-child{background:#243549;border-color:#3f5876;color:#b7d6f7}
