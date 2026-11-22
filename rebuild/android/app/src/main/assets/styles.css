@@ -141,3 +141,9 @@ h1{font-size:22px;line-height:1.15;letter-spacing:-.6px;margin:3px 0 0;font-weig
 .notification-ignore{background:#26354b;color:#b0c6de;border:1px solid #39516e}
 #notificationCount{font-size:11px;color:#8bedc8}
 @media(max-width:380px){.tab{font-size:11px;padding:10px 1px}.notification-actions{grid-template-columns:1fr}.notification-actions button{width:100%}}
+
+/* Recognition is a suggestion; the user explicitly reviews account and amount. */
+.notification-detected,.notification-unknown{font-size:12px;line-height:1.5;padding:10px 12px;border-radius:11px;margin-bottom:11px}
+.notification-detected{background:#1b4239;border:1px solid #39735a;color:#a6eec9}
+.notification-unknown{background:#3b3544;border:1px solid #66516a;color:#d0bfda}
+.suggestion-note{background:#203b43;border:1px solid #3f7375;color:#c1e9df;padding:11px 12px;border-radius:11px;font-size:12px;line-height:1.5;margin:6px 0 2px}
