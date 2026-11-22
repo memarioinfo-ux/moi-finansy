@@ -66,6 +66,21 @@ class MainActivity : Activity() {
     }
 
     private fun openBackupPicker(export: Boolean) {
+        if (!export) {
+            android.app.AlertDialog.Builder(this)
+                .setTitle("Восстановление из копии")
+                .setMessage("Можно выбрать только резервную копию тестового приложения «Мои финансы» v2. " +
+                    "Импорт разрешён только в пустую базу. Если здесь уже есть счета или операции, " +
+                    "они не будут заменены или удалены.")
+                .setNegativeButton("Отмена", null)
+                .setPositiveButton("Выбрать файл") { _, _ -> launchBackupPicker(false) }
+                .show()
+            return
+        }
+        launchBackupPicker(true)
+    }
+
+    private fun launchBackupPicker(export: Boolean) {
         val intent = if (export) {
             Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
                 addCategory(Intent.CATEGORY_OPENABLE)
