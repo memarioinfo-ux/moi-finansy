@@ -115,6 +115,12 @@ function renderNotifications(){
   );
   const title=node("strong",event.title||"Банковская операция","notification-title");
   const body=node("p",event.body,"notification-body");
+  const suggestion=event.suggestion;
+  const detected=suggestion
+   ? node("div","Предварительно: "+(suggestion.kind==="income"?"доход":"расход")+" · "+
+     fmt(suggestion.amountMinor,suggestion.currency)+(suggestion.cardLast4?" · карта ****"+suggestion.cardLast4:"")+
+     ". Проверьте перед сохранением.","notification-detected")
+   : node("div","Сумма или направление не определены однозначно. Введите данные вручную.","notification-unknown");
   const actions=node("div",undefined,"notification-actions");
   const add=node("button","＋ Внести операцию","notification-add");
   add.type="button";
@@ -127,7 +133,7 @@ function renderNotifications(){
    catch(e){toast(e.message);}
   };
   actions.append(add,ignore);
-  box.append(meta,title,body,actions);
+  box.append(meta,title,body,detected,actions);
   list.append(box);
  }
 }
@@ -151,6 +157,28 @@ function updateKind(value){
  for(const b of document.querySelectorAll("[data-kind]"))b.classList.toggle("selected",b.dataset.kind===kind);
  $("transactionDialogTitle").textContent=editId?"Изменить операцию":"Новая операция";
 }
+function suggestForBankEvent(event){
+ const notice=$("txSuggestionNotice");
+ notice.classList.remove("hidden");
+ const suggestion=event.suggestion;
+ // Never auto-select an account from a bank notification, even when only one exists.
+ $("txAccount").add(new Option("Выберите счёт вручную","",true,true),0);
+ $("txAccount").value="";
+ if(!suggestion){
+  notice.textContent="Не удалось однозначно распознать сумму и направление. Проверьте сообщение и заполните все поля.";
+  return;
+ }
+ updateKind(suggestion.kind);
+ const amount=Number(suggestion.amountMinor);
+ if(Number.isSafeInteger(amount)&&amount>0){
+  $("txAmount").value=Math.floor(amount/100)+","+
+   String(amount%100).padStart(2,"0");
+ }
+ notice.textContent="Предварительно: "+(suggestion.kind==="income"?"доход":"расход")+
+  " "+fmt(amount,suggestion.currency)+
+  (suggestion.cardLast4?" · карта ****"+suggestion.cardLast4:"")+
+  ". Обязательно выберите счёт и проверьте его валюту. Результат может быть неточным.";
+}
 function openTransaction(value="expense",tx=null,eventId=""){
  if(!state.accounts.length){toast("Сначала создайте счёт");switchTab("accounts");return;}
  editId=tx?.id||"";
@@ -158,7 +186,12 @@ function openTransaction(value="expense",tx=null,eventId=""){
  $("transactionForm").reset();selectAccounts();updateKind(value);
  const event=(state.notifications||[]).find(n=>n.id===eventId);
  $("txDate").value=localDate(tx?.occurredAt||event?.receivedAt||Date.now());
- if(event && !tx)$("txNote").value=event.title.slice(0,100);
+ $("txSuggestionNotice").classList.add("hidden");
+ $("txSuggestionNotice").textContent="";
+ if(event && !tx){
+  $("txNote").value=event.title.slice(0,100);
+  suggestForBankEvent(event);
+ }
  $("deleteTransaction").classList.toggle("hidden",!tx);
  if(tx){
   $("txAmount").value=(Number(tx.amountMinor)/100).toFixed(2).replace(".",",");
