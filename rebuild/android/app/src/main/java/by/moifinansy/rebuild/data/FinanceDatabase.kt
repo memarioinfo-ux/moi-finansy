@@ -77,6 +77,18 @@ interface FinanceDao {
     @Query("SELECT * FROM transactions WHERE id = :id LIMIT 1")
     fun transaction(id: String): TransactionEntity?
 
+    @Query("SELECT * FROM notification_events WHERE status IN ('pending', 'needs_review') ORDER BY receivedAt DESC, id DESC LIMIT 100")
+    fun notificationsForReview(): List<NotificationEventEntity>
+
+    @Query("SELECT * FROM notification_events WHERE id = :id LIMIT 1")
+    fun notification(id: String): NotificationEventEntity?
+
+    @Query("UPDATE notification_events SET status = 'ignored' WHERE id = :id AND status IN ('pending', 'needs_review')")
+    fun ignoreNotification(id: String): Int
+
+    @Query("UPDATE notification_events SET status = 'processed', transactionId = :transactionId WHERE id = :id AND status IN ('pending', 'needs_review')")
+    fun markNotificationProcessed(id: String, transactionId: String): Int
+
     @Query("SELECT COUNT(*) FROM notification_events WHERE status IN ('pending', 'needs_review')")
     fun unreviewedNotificationCount(): Int
 
