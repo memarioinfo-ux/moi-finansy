@@ -24,7 +24,7 @@ jobs:
         with:
           node-version: '22'
       - name: Core accounting and formatting tests
-        run: node --test rebuild/test/ledger.test.mjs rebuild/android/app/src/test/js/money.test.cjs
+        run: node --test rebuild/test/*.test.mjs rebuild/android/app/src/test/js/money.test.cjs
       - name: Validate Android UI JavaScript
         run: |
           node --check rebuild/android/app/src/main/assets/app.js
