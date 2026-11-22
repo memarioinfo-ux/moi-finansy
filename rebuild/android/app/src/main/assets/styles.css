@@ -150,3 +150,7 @@ h1{font-size:22px;line-height:1.15;letter-spacing:-.6px;margin:3px 0 0;font-weig
 
 .account-rename{background:transparent;border:1px solid #3d5970;border-radius:9px;padding:8px;color:#b0dbce;font-size:11px;font-weight:800;flex-shrink:0}
 @media(max-width:420px){.account-row{flex-wrap:wrap}.account-amount{margin-left:auto}.account-rename{flex-basis:100%;margin-top:5px}}
+
+.app-back{font-size:12px;font-weight:700;color:#c2ddf1;border:1px solid #344961;background:#192b43;border-radius:11px;padding:9px 11px;flex-shrink:0}
+.app-back:focus-visible{outline:2px solid #86bbf2;outline-offset:2px}
+@media(max-width:400px){.app-back{padding:8px;font-size:11px}.brand .eyebrow{display:none}}
