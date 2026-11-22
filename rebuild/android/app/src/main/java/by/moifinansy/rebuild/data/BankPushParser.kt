@@ -46,7 +46,10 @@ object BankPushParser {
         val outgoing = expenseWords.containsMatchIn(source)
         if (incoming == outgoing) return null
 
+        val cardRanges = cardPattern.findAll(source).map { it.range }.toList()
         val candidates = amountPattern.findAll(source).filter { match ->
+            // Four digits after a card marker are an identifier, not a purchase.
+            if (cardRanges.any { match.range.first in it }) return@filter false
             val before = source.substring(maxOf(0, match.range.first - 70), match.range.first)
             val balanceIndex = balanceWords.findAll(before).lastOrNull()?.range?.first ?: -1
             val actionIndex = (incomeWords.findAll(before).toList() +
