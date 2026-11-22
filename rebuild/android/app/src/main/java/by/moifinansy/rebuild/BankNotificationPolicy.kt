@@ -18,7 +18,7 @@ object BankNotificationPolicy {
         RegexOption.IGNORE_CASE
     )
     private val transactionWords = Regex(
-        "оплат|покуп|списан|зачисл|перевод|платеж|платёж|сняти|возврат|пополнен|\u043e\u043f\u0435\u0440\u0430\u0446|transaction|payment|purchase|withdraw|deposit|refund",
+        "оплат|покуп|списан|зачисл|перевод|платеж|платёж|сняти|возврат|пополнен|поступ|расход|transaction|payment|purchase|withdraw|deposit|refund",
         RegexOption.IGNORE_CASE
     )
     private val currencyAmount = Regex(
@@ -32,7 +32,10 @@ object BankNotificationPolicy {
         if (combined.length !in 12..4000) return false
         if (credentialWords.containsMatchIn(combined)) return false
         // Store ambiguous payment notifications in the review journal; never auto-book them.
+        // Do not retain balance-only or promotional bank messages. Only plausible
+        // transaction messages enter the local review queue.
+        if (!transactionWords.containsMatchIn(combined)) return false
         return currencyAmount.containsMatchIn(combined) ||
-            (transactionWords.containsMatchIn(combined) && Regex("\\d").containsMatchIn(combined))
+            Regex("""\\d{1,9}[.,]\\d{2}(?![\\d.])""").containsMatchIn(combined)
     }
 }
