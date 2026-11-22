@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1121">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'">
+  <title>Мои финансы</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">₽</div>
+        <div><div class="eyebrow">ЛИЧНЫЙ БЮДЖЕТ</div><h1>Мои финансы</h1></div>
+      </div>
+      <div class="preview">ТЕСТ · 0.1</div>
+    </header>
+
+    <main>
+      <section class="hero" aria-label="Состояние счетов">
+        <div class="hero-glow"></div>
+        <div class="hero-title">Мои средства</div>
+        <div id="heroBalances" class="hero-balance">—</div>
+        <div class="hero-caption">Текущие остатки по всем счетам</div>
+        <div class="hero-line"></div>
+        <div class="hero-metrics">
+          <div><span>Доходы за месяц</span><strong id="monthlyIncome">—</strong></div>
+          <div><span>Расходы за месяц</span><strong id="monthlyExpense">—</strong></div>
+        </div>
+      </section>
+
+      <section class="section-menu">
+        <div>
+          <div class="small-title">Обзор</div>
+          <div id="monthLabel" class="subtitle"></div>
+        </div>
+        <button id="newTransaction" class="primary-button" type="button">＋ Операция</button>
+      </section>
+
+      <nav class="tabs" aria-label="Разделы приложения">
+        <button class="tab active" data-tab="history" type="button">История</button>
+        <button class="tab" data-tab="accounts" type="button">Счета</button>
+        <button class="tab" data-tab="analytics" type="button">Аналитика</button>
+      </nav>
+
+      <section class="panel" id="history" aria-label="История операций">
+        <div class="filter-toolbar">
+          <label class="sr-only" for="accountFilter">Счёт</label>
+          <select id="accountFilter" class="filter-select"><option value="">Все счета</option></select>
+          <label class="sr-only" for="kindFilter">Тип операции</label>
+          <select id="kindFilter" class="filter-select">
+            <option value="">Все операции</option>
+            <option value="expense">Расходы</option>
+            <option value="income">Доходы</option>
+            <option value="transfer">Переводы</option>
+          </select>
+        </div>
+        <div id="historyList" class="entries"></div>
+      </section>
+
+      <section class="panel hidden" id="accounts" aria-label="Мои счета">
+        <div class="panel-heading">
+          <h2>Счета и кошельки</h2>
+          <button class="text-button" id="newAccount" type="button">＋ Добавить</button>
+        </div>
+        <div id="accountList" class="account-list"></div>
+      </section>
+
+      <section class="panel hidden" id="analytics" aria-label="Аналитика">
+        <div class="panel-heading"><h2>Расходы по категориям</h2><span class="subtitle">Текущий месяц</span></div>
+        <div id="analyticsList" class="analytics-list"></div>
+        <div class="privacy-note">Расчёты ведутся отдельно для каждой валюты. Внутренние переводы не считаются доходами или расходами.</div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span class="footer-dot"></span> Данные хранятся на этом устройстве
+      <span class="footer-note">Тестовая версия не импортирует историю старого приложения</span>
+    </footer>
+  </div>
+
+  <dialog id="accountDialog" class="sheet">
+    <form id="accountForm" class="sheet-form">
+      <div class="dialog-head"><h2>Новый счёт</h2><button type="button" class="dismiss" data-close="accountDialog" aria-label="Закрыть">×</button></div>
+      <label for="accountName">Название</label>
+      <input id="accountName" name="name" placeholder="Например, Альфа-Банк" maxlength="60" required autocomplete="off">
+      <label for="accountCurrency">Валюта</label>
+      <select id="accountCurrency" name="currency"><option value="BYN">BYN · Белорусский рубль</option><option value="USD">USD · Доллар США</option><option value="EUR">EUR · Евро</option></select>
+      <label for="accountInitialBalance">Начальный остаток</label>
+      <input id="accountInitialBalance" name="balance" inputmode="decimal" value="0,00" required>
+      <p class="form-help">Это сумма на счёте в момент начала учёта. Позже остаток меняется операциями.</p>
+      <button class="save-button" type="submit">Создать счёт</button>
+    </form>
+  </dialog>
+
+  <dialog id="transactionDialog" class="sheet">
+    <form id="transactionForm" class="sheet-form">
+      <div class="dialog-head"><h2 id="transactionDialogTitle">Новая операция</h2><button type="button" class="dismiss" data-close="transactionDialog" aria-label="Закрыть">×</button></div>
+      <div class="segmented" aria-label="Тип операции">
+        <button class="type-option selected" data-kind="expense" type="button">Расход</button>
+        <button class="type-option" data-kind="income" type="button">Доход</button>
+        <button class="type-option" data-kind="transfer" type="button">Перевод</button>
+      </div>
+      <label for="txAmount">Сумма</label>
+      <input id="txAmount" placeholder="0,00" inputmode="decimal" required>
+      <div id="singleAccountGroup">
+        <label for="txAccount">Счёт</label>
+        <select id="txAccount"></select>
+      </div>
+      <div id="transferGroups" class="hidden">
+        <label for="txFrom">Откуда</label>
+        <select id="txFrom"></select>
+        <label for="txTo">Куда</label>
+        <select id="txTo"></select>
+      </div>
+      <div id="categoryGroup">
+        <label for="txCategory">Категория</label>
+        <input id="txCategory" maxlength="60" placeholder="Например, Продукты" list="categorySuggestions">
+        <datalist id="categorySuggestions">
+          <option value="Продукты"></option><option value="Кафе и рестораны"></option>
+          <option value="Транспорт"></option><option value="Покупки"></option>
+          <option value="Здоровье"></option><option value="Дом"></option>
+          <option value="Зарплата"></option><option value="Прочее"></option>
+        </datalist>
+      </div>
+      <label for="txDate">Дата и время</label>
+      <input id="txDate" type="datetime-local" required>
+      <label for="txNote">Комментарий</label>
+      <input id="txNote" maxlength="250" placeholder="Необязательно">
+      <button class="save-button" type="submit">Сохранить операцию</button>
+      <button id="deleteTransaction" class="danger-button hidden" type="button">Удалить операцию</button>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast hidden" role="status"></div>
+</body>
+</html>
