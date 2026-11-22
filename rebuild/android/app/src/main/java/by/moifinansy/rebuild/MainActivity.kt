@@ -187,6 +187,11 @@ class MainActivity : Activity() {
             respond { repository.createAccount(name, currency, startingBalance) }
 
         @JavascriptInterface
+        fun renameAccount(id: String, name: String): String = respond {
+            repository.renameAccount(id, name)
+        }
+
+        @JavascriptInterface
         fun saveTransaction(json: String): String = respond {
             repository.saveTransaction(JSONObject(json))
         }
