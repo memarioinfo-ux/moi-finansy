@@ -25,6 +25,7 @@ object BankPushParser {
         "зачисл|поступ|пополн|возврат|refund|credited|income|заработн",
         RegexOption.IGNORE_CASE
     )
+    private val refundWords = Regex("возврат|refund|отмена покупки", RegexOption.IGNORE_CASE)
     private val transferWords = Regex("перевод|transfer|обмен|конвертац|exchange", RegexOption.IGNORE_CASE)
     private val balanceWords = Regex("остаток|доступно|balance|available", RegexOption.IGNORE_CASE)
     private val amountPattern = Regex(
@@ -44,7 +45,10 @@ object BankPushParser {
 
         val incoming = incomeWords.containsMatchIn(source)
         val outgoing = expenseWords.containsMatchIn(source)
-        if (incoming == outgoing) return null
+        val refund = refundWords.containsMatchIn(source)
+        // "Возврат покупки" contains both income and expense words, but is
+        // unambiguously an incoming refund.
+        if (!refund && incoming == outgoing) return null
 
         val cardRanges = cardPattern.findAll(source).map { it.range }.toList()
         val candidates = amountPattern.findAll(source).filter { match ->
@@ -78,7 +82,7 @@ object BankPushParser {
         }
         val card = cardPattern.find(source)?.groupValues?.getOrNull(1)
         return BankPushSuggestion(
-            kind = if (incoming) "income" else "expense",
+            kind = if (refund || incoming) "income" else "expense",
             amountMinor = amountMinor,
             currency = currency,
             cardLast4 = card
