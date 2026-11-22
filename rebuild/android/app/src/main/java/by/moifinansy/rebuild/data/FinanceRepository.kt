@@ -44,16 +44,29 @@ class FinanceRepository(private val database: FinanceDatabase) {
     fun createAccount(name: String, currency: String, balance: String): JSONObject {
         val normalizedCurrency = currency.trim().uppercase()
         require(normalizedCurrency in availableCurrencies) { "Неподдерживаемая валюта" }
-        dao.insertAccount(
-            AccountEntity(
-                id = UUID.randomUUID().toString(),
-                name = text(name, "Название счёта", 60),
-                currency = normalizedCurrency,
-                initialBalanceMinor = parseMinor(balance, allowNegative = true),
-                createdAt = System.currentTimeMillis()
+        val opening = parseMinor(balance, allowNegative = true)
+        val validatedName = text(name, "Название счёта", 60)
+        return database.runInTransaction(java.util.concurrent.Callable {
+            dao.insertAccount(
+                AccountEntity(
+                    id = UUID.randomUUID().toString(),
+                    name = validatedName,
+                    currency = normalizedCurrency,
+                    initialBalanceMinor = opening,
+                    createdAt = System.currentTimeMillis()
+                )
             )
-        )
-        return snapshot()
+            snapshot()
+        })
+    }
+
+    @Synchronized
+    fun renameAccount(id: String, name: String): JSONObject {
+        val cleanName = text(name, "Название счёта", 60)
+        return database.runInTransaction(java.util.concurrent.Callable {
+            require(dao.renameAccount(id, cleanName) == 1) { "Счёт не найден" }
+            snapshot()
+        })
     }
 
     @Synchronized
@@ -124,37 +137,42 @@ class FinanceRepository(private val database: FinanceDatabase) {
             sourceFingerprint = event?.fingerprint ?: old?.sourceFingerprint,
             deletedAt = null
         )
-        if (event != null && sourceNotificationId != null) {
-            // Link and ledger entry must be a single transaction, so a retry cannot
-            // create a duplicate or mark an event done without a matching entry.
-            database.runInTransaction {
+        return database.runInTransaction(java.util.concurrent.Callable {
+            // Write and final balance validation are one atomic transaction.
+            // Overflow/invalid state rolls back BOTH ledger and event status.
+            if (event != null && sourceNotificationId != null) {
                 val current = dao.notification(sourceNotificationId)
                 require(current != null && current.status in setOf("pending", "needs_review")) {
                     "Уведомление уже было обработано"
                 }
                 dao.insertTransaction(updated)
                 check(dao.markNotificationProcessed(sourceNotificationId, updated.id) == 1)
-            }
-        } else if (old == null) dao.insertTransaction(updated)
-        else check(dao.updateTransaction(updated) == 1) { "Не удалось изменить операцию" }
-        return snapshot()
+            } else if (old == null) dao.insertTransaction(updated)
+            else check(dao.updateTransaction(updated) == 1) { "Не удалось изменить операцию" }
+            snapshot()
+        })
     }
 
     @Synchronized
     fun ignoreNotification(id: String): JSONObject {
-        require(id.isNotBlank() && dao.ignoreNotification(id) == 1) {
-            "Уведомление уже обработано или не найдено"
-        }
-        return snapshot()
+        require(id.isNotBlank()) { "Уведомление не выбрано" }
+        return database.runInTransaction(java.util.concurrent.Callable {
+            require(dao.ignoreNotification(id) == 1) {
+                "Уведомление уже обработано или не найдено"
+            }
+            snapshot()
+        })
     }
 
     @Synchronized
     fun deleteTransaction(id: String): JSONObject {
         require(id.isNotBlank()) { "Не выбрана операция" }
-        require(dao.softDeleteTransaction(id, System.currentTimeMillis()) == 1) {
-            "Операция уже удалена или не найдена"
-        }
-        return snapshot()
+        return database.runInTransaction(java.util.concurrent.Callable {
+            require(dao.softDeleteTransaction(id, System.currentTimeMillis()) == 1) {
+                "Операция уже удалена или не найдена"
+            }
+            snapshot()
+        })
     }
 
     @Synchronized
