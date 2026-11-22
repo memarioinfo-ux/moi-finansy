@@ -5,7 +5,7 @@ let editId="";
 let sourceEventId="";
 let kind="expense";
 const labels={expense:"Расход",income:"Доход",transfer:"Перевод"};
-const fmt=(minor,currency)=>new Intl.NumberFormat("ru-RU",{minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(minor)/100)+" "+currency;
+const fmt=(minor,currency)=>window.FinanceMoney.format(minor,currency);
 const node=(tag,text,className)=>{const x=document.createElement(tag);if(text!==undefined)x.textContent=text;if(className)x.className=className;return x;};
 function call(method,...args){
  if(!window.FinanceNative||typeof window.FinanceNative[method]!=="function")throw Error("Откройте тестовую версию на Android");
@@ -21,7 +21,7 @@ function account(id){return state.accounts.find(a=>a.id===id);}
 function refresh(data){state=data||call("getSnapshot");render();}
 function localDate(ms){const dt=new Date(ms),pad=n=>String(n).padStart(2,"0");return dt.getFullYear()+"-"+pad(dt.getMonth()+1)+"-"+pad(dt.getDate())+"T"+pad(dt.getHours())+":"+pad(dt.getMinutes());}
 function moneyByCurrency(accounts){
- const groups={};for(const a of accounts){groups[a.currency]=(groups[a.currency]||0)+Number(a.balanceMinor);}return groups;
+ const groups={};for(const a of accounts){groups[a.currency]=(groups[a.currency]||0n)+window.FinanceMoney.minor(a.balanceMinor);}return groups;
 }
 function render(){
  const groups=moneyByCurrency(state.accounts);
@@ -30,7 +30,7 @@ function render(){
  const today=new Date(),month=today.getMonth(),year=today.getFullYear();
  $("monthLabel").textContent=today.toLocaleString("ru-RU",{month:"long",year:"numeric"});
  const monthly=state.transactions.filter(t=>{const d=new Date(t.occurredAt);return d.getMonth()===month&&d.getFullYear()===year;});
- function totals(kind){const out={};for(const t of monthly.filter(x=>x.kind===kind)){const c=account(t.accountId)?.currency||"BYN";out[c]=(out[c]||0)+Number(t.amountMinor);}return Object.entries(out).map(([c,v])=>fmt(v,c)).join(" / ")||"0,00 BYN";}
+ function totals(kind){const out={};for(const t of monthly.filter(x=>x.kind===kind)){const c=account(t.accountId)?.currency||"BYN";out[c]=(out[c]||0n)+window.FinanceMoney.minor(t.amountMinor);}return Object.entries(out).map(([c,v])=>fmt(v,c)).join(" / ")||"0,00 BYN";}
  $("monthlyIncome").textContent=totals("income");
  $("monthlyExpense").textContent=totals("expense");
  renderAccounts();renderTransactions();renderAnalytics();renderSelects();renderNotifications();
@@ -79,9 +79,9 @@ function renderAnalytics(){
  for(const t of state.transactions){
   const date=new Date(t.occurredAt);if(t.kind!=="expense"||date.getFullYear()!==today.getFullYear()||date.getMonth()!==today.getMonth())continue;
   const currency=account(t.accountId)?.currency||"BYN",key=currency+"|"+(t.category||"Без категории");
-  totals.set(key,(totals.get(key)||0)+Number(t.amountMinor));
+  totals.set(key,(totals.get(key)||0n)+window.FinanceMoney.minor(t.amountMinor));
  }
- const items=[...totals].sort((a,b)=>b[1]-a[1]);
+ const items=[...totals].sort((a,b)=>a[1]===b[1]?0:(a[1]>b[1]?-1:1));
  if(!items.length){host.append(node("div","Добавьте расходы, чтобы увидеть аналитику.","empty"));return;}
  for(const [key,value] of items){
   const [currency,category]=key.split("|"),line=node("div",undefined,"analytics-row");
@@ -153,6 +153,9 @@ function updateKind(value){
  kind=value;
  $("singleAccountGroup").classList.toggle("hidden",kind==="transfer");
  $("transferGroups").classList.toggle("hidden",kind!=="transfer");
+ $("txAccount").required=kind!=="transfer";
+ $("txFrom").required=kind==="transfer";
+ $("txTo").required=kind==="transfer";
  $("categoryGroup").classList.toggle("hidden",kind==="transfer");
  for(const b of document.querySelectorAll("[data-kind]"))b.classList.toggle("selected",b.dataset.kind===kind);
  $("transactionDialogTitle").textContent=editId?"Изменить операцию":"Новая операция";
@@ -171,8 +174,7 @@ function suggestForBankEvent(event){
  updateKind(suggestion.kind);
  const amount=Number(suggestion.amountMinor);
  if(Number.isSafeInteger(amount)&&amount>0){
-  $("txAmount").value=Math.floor(amount/100)+","+
-   String(amount%100).padStart(2,"0");
+  $("txAmount").value=window.FinanceMoney.input(amount);
  }
  notice.textContent="Предварительно: "+(suggestion.kind==="income"?"доход":"расход")+
   " "+fmt(amount,suggestion.currency)+
@@ -194,7 +196,7 @@ function openTransaction(value="expense",tx=null,eventId=""){
  }
  $("deleteTransaction").classList.toggle("hidden",!tx);
  if(tx){
-  $("txAmount").value=(Number(tx.amountMinor)/100).toFixed(2).replace(".",",");
+  $("txAmount").value=window.FinanceMoney.input(tx.amountMinor);
   $("txCategory").value=tx.category||"";
   $("txNote").value=tx.note||"";
   if(tx.accountId)$("txAccount").value=tx.accountId;
