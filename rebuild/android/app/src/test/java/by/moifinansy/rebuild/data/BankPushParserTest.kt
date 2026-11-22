@@ -54,6 +54,12 @@ class BankPushParserTest {
         ))
     }
 
+    @Test fun cardSuffixIsNeverATransactionAmount() {
+        assertNull(BankPushParser.suggest(
+            alfa, "Оплата картой", "Карта ****1234 BYN"
+        ))
+    }
+
     @Test fun onlyBalanceReturnsNoSuggestion() {
         assertNull(BankPushParser.suggest(
             alfa, "Зачисление", "Остаток 200,31 BYN"
