@@ -1,6 +1,11 @@
 name: Android rebuild v2 preview
 
 on:
+  push:
+    branches: [rebuild-v2]
+    paths:
+      - 'rebuild/android/**'
+      - '.github/workflows/rebuild-android-preview.yml'
   workflow_dispatch:
 
 concurrency:
@@ -40,10 +45,13 @@ jobs:
         run: |
           test -s rebuild/android/app/src/main/assets/index.html
           test -s rebuild/android/app/src/main/assets/app.js
+          test -s rebuild/android/app/src/main/assets/money.js
           test -s rebuild/android/app/src/main/assets/styles.css
 
       - name: Validate bundled JavaScript
-        run: node --check rebuild/android/app/src/main/assets/app.js
+        run: |
+          node --check rebuild/android/app/src/main/assets/app.js
+          node --check rebuild/android/app/src/main/assets/money.js
 
       - name: Assemble isolated debug APK
         working-directory: rebuild/android
