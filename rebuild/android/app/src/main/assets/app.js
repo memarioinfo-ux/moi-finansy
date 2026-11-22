@@ -151,3 +151,27 @@ for(const b of document.querySelectorAll("[data-kind]"))b.onclick=()=>updateKind
 for(const b of document.querySelectorAll("[data-close]"))b.onclick=()=>$(b.dataset.close).close();
 $("accountFilter").onchange=renderTransactions;$("kindFilter").onchange=renderTransactions;
 try{refresh();}catch(e){toast("Ошибка загрузки: "+e.message);}
+
+window.onNativeBackupEvent = (type, message) => {
+  toast(message);
+  if (type === "imported") {
+    try { refresh(); } catch (error) { toast(error.message); }
+  }
+};
+$("exportBackup").onclick = () => {
+  try {
+    if (!window.FinanceNative?.exportBackup) throw Error("Недоступно в этой версии");
+    window.FinanceNative.exportBackup();
+  } catch (error) { toast(error.message); }
+};
+$("importBackup").onclick = () => {
+  if (state.accounts.length || state.transactions.length) {
+    toast("Восстановление доступно только в пустую базу. Ваши текущие данные не будут заменены.");
+    return;
+  }
+  if (!confirm("Загрузить ранее сохранённую копию? Содержимое будет проверено до сохранения.")) return;
+  try {
+    if (!window.FinanceNative?.importBackup) throw Error("Недоступно в этой версии");
+    window.FinanceNative.importBackup();
+  } catch (error) { toast(error.message); }
+};
