@@ -6605,10 +6605,13 @@ function inPeriod(dateStr, period){
     return d >= new Date('2026-07-31T00:00:00') && d <= new Date('2026-08-05T23:59:59');
   }
   const d = new Date(dateStr + 'T12:00:00');
-  const diffDays = Math.floor((referenceDate - d) / (1000*60*60*24));
+  // Refresh period boundaries when the app remains open across midnight.
+  const today = new Date();
+  today.setHours(12,0,0,0);
+  const diffDays = Math.floor((today - d) / (1000*60*60*24));
   if(period==='week') return diffDays <= 6 && diffDays >= 0;
-  if(period==='month') return d.getMonth()===referenceDate.getMonth() && d.getFullYear()===referenceDate.getFullYear();
-  if(period==='year') return d.getFullYear()===referenceDate.getFullYear();
+  if(period==='month') return d.getMonth()===today.getMonth() && d.getFullYear()===today.getFullYear();
+  if(period==='year') return d.getFullYear()===today.getFullYear();
   return true;
 }
 function filterTx(){
@@ -6623,14 +6626,31 @@ function renderInfo(){
   const acc = accounts.find(a=>a.id===currentAccount);
   const periodText = {all:'все операции',week:'операции за неделю',month:'операции за месяц',year:'операции за год',period:'операции за выбранный период'}[currentPeriod];
   const typeText = currentType==='all' ? '' : currentType==='income' ? ' Только доходы.' : ' Только расходы.';
-  document.getElementById('filterInfo').textContent = `Показаны ${periodText} по счёту «${acc.name}».${typeText}`;
+  const info = document.getElementById('filterInfo');
+  const text = `Показаны ${periodText} по счёту «${acc ? acc.name : 'Все счета'}».${typeText}`;
+  if(info && info.textContent!==text) info.textContent=text;
+}
+// Keep day/row DOM nodes stable across repeated renders and period switches.
+// Clearing #txList on each render caused visible flicker and lost scroll position.
+const historyDayCache=new Map();
+const historyMarkupCache=new WeakMap();
+const historyTxViewKeys=new WeakMap();
+let historyViewSequence=0;
+function historyViewKey(tx){
+  if(!historyTxViewKeys.has(tx)) historyTxViewKeys.set(tx,'row-'+(++historyViewSequence));
+  return historyTxViewKeys.get(tx);
+}
+function historyUpdateMarkup(el,html){
+  if(historyMarkupCache.get(el)===html) return;
+  el.innerHTML=html;
+  historyMarkupCache.set(el,html);
 }
 function renderList(){
   if(currentAccount === '__add__'){
     const root=document.getElementById('txList');
     const info=document.getElementById('filterInfo');
     if(info) info.textContent='';
-    if(root) root.innerHTML='';
+    if(root && root.childElementCount) root.replaceChildren();
     return;
   }
 
@@ -6639,9 +6659,13 @@ function renderList(){
   const items=filterTx();
 
   if(!items.length){
-    root.innerHTML='<div class="day-block"><div class="day-head"><div class="day-num">—</div><div class="day-date"><div class="date-text">Нет операций</div></div><div></div></div></div>';
+    if(root.dataset.historyEmpty!=='1'){
+      root.innerHTML='<div class="day-block"><div class="day-head"><div class="day-num">—</div><div class="day-date"><div class="date-text">Нет операций</div></div><div></div></div></div>';
+      root.dataset.historyEmpty='1';
+    }
     return;
   }
+  root.dataset.historyEmpty='0';
 
   const grouped={};
   items.forEach(tx=>{
@@ -6649,9 +6673,8 @@ function renderList(){
     grouped[tx.date].push(tx);
   });
 
-  root.innerHTML='';
-
-  Object.keys(grouped).sort((a,b)=>b.localeCompare(a)).forEach(dateStr=>{
+  const visibleDays=Object.keys(grouped).sort((a,b)=>b.localeCompare(a));
+  visibleDays.forEach((dateStr,dayIndex)=>{
     const txs=grouped[dateStr].sort((a,b)=>transactionTimestamp(b)-transactionTimestamp(a));
     const d=new Date(dateStr+'T12:00:00');
 
@@ -6661,9 +6684,14 @@ function renderList(){
     const totalClass=total>=0?'pos':'neg';
     const totalPrefix=total>=0?'+':'-';
 
-    const block=document.createElement('div');
-    block.className='day-block';
-    block.innerHTML=`
+    let block=historyDayCache.get(dateStr);
+    if(!block){
+      block=document.createElement('div');
+      block.className='day-block';
+      block.dataset.historyDate=dateStr;
+      historyDayCache.set(dateStr,block);
+    }
+    const headerMarkup=`
       <div class="day-head">
         <div class="day-num">${String(d.getDate()).padStart(2,'0')}</div>
         <div class="day-date">
@@ -6673,8 +6701,20 @@ function renderList(){
         <div class="day-total ${totalClass}">${totalPrefix}${formatBr(Math.abs(total))}</div>
       </div>
     `;
-
-    txs.forEach(tx=>{
+    if(block.__historyHeader!==headerMarkup){
+      const wrapper=document.createElement('div');
+      wrapper.innerHTML=headerMarkup;
+      const newHead=wrapper.firstElementChild;
+      const oldHead=block.firstElementChild;
+      if(oldHead && oldHead.classList.contains('day-head')) block.replaceChild(newHead,oldHead);
+      else block.insertBefore(newHead,oldHead||null);
+      block.__historyHeader=headerMarkup;
+    }
+    const currentRows=new Map(Array.from(block.children).slice(1)
+      .filter(el=>el.dataset.historyViewKey)
+      .map(el=>[el.dataset.historyViewKey,el]));
+    const visibleRows=new Set();
+    txs.forEach((tx,rowIndex)=>{
       const cls=tx.type==='income'?'pos':'neg';
       const linkedAccount=accounts.find(a=>a.id===tx.account);
       const accountIcon=linkedAccount?(linkedAccount.icon||'💳'):(tx.wallet||'💳');
@@ -6695,12 +6735,15 @@ function renderList(){
       const details=[`${prettyDate} ${time}`, place, accountTitle].filter(Boolean).join(' · ');
       const userComment=(comment && (!isBankOperation || comment!==merchant)) ? comment : '';
 
-      const row=document.createElement('div');
+      const viewKey=historyViewKey(tx);
+      visibleRows.add(viewKey);
+      const row=currentRows.get(viewKey)||document.createElement('div');
       row.className='tx';
+      row.dataset.historyViewKey=viewKey;
       row.dataset.accountId=tx.account||'';
       row.dataset.txId=tx.id||'';
 
-      row.innerHTML=`
+      const rowMarkup=`
         <div class="wallet-icon ${visualBankKind(linkedAccount)}" title="${escapeHtml(accountTitle)}">${linkedAccount ? visualAccountIcon(linkedAccount) : escapeHtml(accountIcon)}</div>
         <div class="arrow">${tx.type==='income' ? '‹' : '›'}</div>
         <div class="cat-icon ${cat.cls}" style="background:${cat.bg || tx.categoryBg || '#98A4B3'} !important">${cat.icon}</div>
@@ -6714,19 +6757,36 @@ function renderList(){
           <button class="tx-edit-btn" type="button" data-edit-tx="${tx.id}" aria-label="Редактировать операцию">✎</button>
         </div>
       `;
-
-      block.appendChild(row);
+      historyUpdateMarkup(row,rowMarkup);
+      if(block.children[rowIndex+1]!==row)
+        block.insertBefore(row,block.children[rowIndex+1]||null);
     });
-
-    root.appendChild(block);
+    Array.from(block.children).slice(1).forEach(row=>{
+      if(!visibleRows.has(row.dataset.historyViewKey)) row.remove();
+    });
+    if(root.children[dayIndex]!==block)
+      root.insertBefore(block,root.children[dayIndex]||null);
   });
 
-  root.querySelectorAll('[data-edit-tx]').forEach(btn=>{
-    btn.addEventListener('click',e=>{
+  const visibleDaySet=new Set(visibleDays);
+  Array.from(root.children).forEach(block=>{
+    if(!visibleDaySet.has(block.dataset.historyDate)) block.remove();
+  });
+  // Discard cached days only after their last transaction was truly deleted.
+  const knownDates=new Set(transactions.map(tx=>tx.date));
+  for(const date of historyDayCache.keys())
+    if(!knownDates.has(date)) historyDayCache.delete(date);
+
+  // One delegated handler, not one new listener per edit button per render.
+  if(root.dataset.historyEditBound!=='1'){
+    root.addEventListener('click',e=>{
+      const btn=e.target.closest('[data-edit-tx]');
+      if(!btn || !root.contains(btn)) return;
       e.stopPropagation();
       openTransactionEdit(btn.dataset.editTx);
     });
-  });
+    root.dataset.historyEditBound='1';
+  }
 }
 function selectAccount(id){
   currentAccount = id;
