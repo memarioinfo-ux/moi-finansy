@@ -4,6 +4,7 @@ let state={accounts:[],transactions:[]};
 let editId="";
 let renameAccountId="";
 let sourceEventId="";
+let currentTab="history";
 let kind="expense";
 const labels={expense:"Расход",income:"Доход",transfer:"Перевод"};
 const fmt=(minor,currency)=>window.FinanceMoney.format(minor,currency);
@@ -146,9 +147,31 @@ function renderNotifications(){
 }
 
 function switchTab(tab){
+ currentTab=tab;
  for(const name of ["history","accounts","analytics","notifications"])$(name).classList.toggle("hidden",name!==tab);
  for(const b of document.querySelectorAll("[data-tab]"))b.classList.toggle("active",b.dataset.tab===tab);
 }
+/** Close overlays first, then return to the complete history.
+ * Returns false only if the native Android activity should be closed. */
+function handleAppBack(){
+ const opened=[...document.querySelectorAll("dialog")].reverse().find(d=>d.open);
+ if(opened){
+  opened.close();
+  return true;
+ }
+ if(currentTab!=="history"){
+  switchTab("history");
+  return true;
+ }
+ return false;
+}
+window.handleNativeBack=handleAppBack;
+$("appBack").onclick=()=>{
+ if(handleAppBack())return;
+ if(window.FinanceNative?.exitApp)window.FinanceNative.exitApp();
+ else toast("Нажмите системную кнопку «Назад», чтобы выйти");
+};
+
 function openAccount(){
  $("accountForm").reset();$("accountDialog").showModal();
 }
