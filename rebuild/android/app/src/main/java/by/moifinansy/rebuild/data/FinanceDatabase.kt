@@ -92,6 +92,9 @@ interface FinanceDao {
     @Query("SELECT COUNT(*) FROM notification_events WHERE status IN ('pending', 'needs_review')")
     fun unreviewedNotificationCount(): Int
 
+    @Query("UPDATE accounts SET name = :name WHERE id = :id")
+    fun renameAccount(id: String, name: String): Int
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     fun insertAccount(account: AccountEntity)
 
