@@ -1,7 +1,17 @@
 name: Rebuild v2 core tests
 
 on:
+  push:
+    branches: [rebuild-v2]
+    paths:
+      - 'rebuild/**'
+      - 'index.html'
+      - '.github/workflows/rebuild-core-tests.yml'
   workflow_dispatch:
+
+concurrency:
+  group: rebuild-core-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   core:
@@ -13,4 +23,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test rebuild/test/ledger.test.mjs
+      - name: Core accounting and formatting tests
+        run: node --test rebuild/test/ledger.test.mjs rebuild/android/app/src/test/js/money.test.cjs
+      - name: Validate Android UI JavaScript
+        run: |
+          node --check rebuild/android/app/src/main/assets/app.js
+          node --check rebuild/android/app/src/main/assets/money.js
