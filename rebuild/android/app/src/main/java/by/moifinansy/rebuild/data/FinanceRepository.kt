@@ -59,6 +59,16 @@ class FinanceRepository(private val database: FinanceDatabase) {
     @Synchronized
     fun saveTransaction(payload: JSONObject): JSONObject {
         val id = payload.optString("id").trim()
+        val sourceNotificationId = payload.optString("sourceNotificationId").trim().ifBlank { null }
+        require(sourceNotificationId == null || id.isBlank()) {
+            "Нельзя привязать уведомление к существующей операции"
+        }
+        val event = sourceNotificationId?.let { dao.notification(it) }
+        if (sourceNotificationId != null) {
+            require(event != null && event.status in setOf("pending", "needs_review")) {
+                "Это уведомление уже обработано либо не найдено"
+            }
+        }
         val kind = payload.optString("kind")
         require(kind in setOf("income", "expense", "transfer")) { "Неизвестный тип операции" }
         val amountMinor = parseMinor(payload.optString("amount"))
@@ -97,11 +107,30 @@ class FinanceRepository(private val database: FinanceDatabase) {
             note = payload.optString("note").trim().take(250),
             occurredAt = occurredAt,
             createdAt = old?.createdAt ?: now,
-            sourceFingerprint = old?.sourceFingerprint,
+            sourceFingerprint = event?.fingerprint ?: old?.sourceFingerprint,
             deletedAt = null
         )
-        if (old == null) dao.insertTransaction(updated)
+        if (event != null && sourceNotificationId != null) {
+            // Link and ledger entry must be a single transaction, so a retry cannot
+            // create a duplicate or mark an event done without a matching entry.
+            database.runInTransaction {
+                val current = dao.notification(sourceNotificationId)
+                require(current != null && current.status in setOf("pending", "needs_review")) {
+                    "Уведомление уже было обработано"
+                }
+                dao.insertTransaction(updated)
+                check(dao.markNotificationProcessed(sourceNotificationId, updated.id) == 1)
+            }
+        } else if (old == null) dao.insertTransaction(updated)
         else check(dao.updateTransaction(updated) == 1) { "Не удалось изменить операцию" }
+        return snapshot()
+    }
+
+    @Synchronized
+    fun ignoreNotification(id: String): JSONObject {
+        require(id.isNotBlank() && dao.ignoreNotification(id) == 1) {
+            "Уведомление уже обработано или не найдено"
+        }
         return snapshot()
     }
 
@@ -165,9 +194,21 @@ class FinanceRepository(private val database: FinanceDatabase) {
                     .put("occurredAt", t.occurredAt)
             )
         }
+        val jsonNotifications = JSONArray()
+        for (n in dao.notificationsForReview()) {
+            jsonNotifications.put(JSONObject()
+                .put("id", n.id)
+                .put("packageName", n.packageName)
+                .put("title", n.title)
+                .put("body", n.body)
+                .put("receivedAt", n.receivedAt)
+                .put("status", n.status)
+            )
+        }
         return JSONObject()
             .put("accounts", jsonAccounts)
             .put("transactions", jsonTransactions)
+            .put("notifications", jsonNotifications)
             .put("unreviewedNotifications", dao.unreviewedNotificationCount())
             .put("databaseVersion", 1)
     }
