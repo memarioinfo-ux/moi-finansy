@@ -30,7 +30,7 @@ h1{font-size:22px;line-height:1.15;letter-spacing:-.6px;margin:3px 0 0;font-weig
 .subtitle{font-size:12px;color:var(--muted);margin-top:4px}
 .primary-button,.save-button{border:0;border-radius:14px;background:linear-gradient(125deg,#80ebbf,#4fcfa9);color:#092d2a;font-weight:850;padding:12px 16px;box-shadow:0 6px 15px #22bb9425}
 .primary-button{white-space:nowrap;font-size:13px}
-.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;padding:4px;background:#152136;border:1px solid #273650;border-radius:14px;margin-bottom:18px}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:4px;background:#152136;border:1px solid #273650;border-radius:14px;margin-bottom:18px}
 .tab{background:transparent;border:0;border-radius:10px;color:#99abc5;font-size:13px;padding:11px 5px;font-weight:700}
 .tab.active{background:#293c51;color:#eafff7;box-shadow:0 3px 9px #0003}
 .panel{animation:fadeIn .15s ease}
@@ -120,3 +120,24 @@ h1{font-size:22px;line-height:1.15;letter-spacing:-.6px;margin:3px 0 0;font-weig
 .backup-buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .backup-buttons button{border:1px solid #3d7166;border-radius:11px;background:#244e48;color:#a5f2d8;font-weight:700;font-size:12px;padding:12px 6px}
 .backup-buttons button:last-child{background:#243549;border-color:#3f5876;color:#b7d6f7}
+
+/* Bank notification inbox: raw messages are never auto-posted to balances. */
+.access-card{background:linear-gradient(130deg,#203546,#162940);border:1px solid #38606c;border-radius:17px;padding:17px;margin-bottom:23px}
+.access-status{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:13px}
+.access-status strong{color:#efacb5;font-size:12px}
+.access-status strong.access-ok{color:#87edc3}
+.access-card p{color:#adc1d2;font-size:12px;line-height:1.6;margin:12px 0}
+.access-card button{width:100%;border:1px solid #4d8e7d;background:#22594d;color:#b6ffe0;font-weight:800;border-radius:12px;padding:12px 8px}
+.inbox-header{display:flex;align-items:center;justify-content:space-between;margin:0 0 13px;gap:9px}
+.inbox-header h3{font-size:16px;letter-spacing:-.2px;margin:0}
+.notification-list{display:flex;flex-direction:column;gap:11px}
+.notification-card{border:1px solid #2b415d;border-radius:16px;background:#14233a;padding:16px}
+.notification-meta{display:flex;justify-content:space-between;gap:7px;color:#8fa9c5;font-size:11px;margin-bottom:9px}
+.notification-title{display:block;font-size:14px;color:#e2edf8;margin-bottom:7px}
+.notification-body{margin:0 0 14px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;color:#a7bdd5}
+.notification-actions{display:grid;grid-template-columns:1fr auto;gap:8px}
+.notification-actions button{border-radius:11px;padding:10px 11px;font-size:12px;font-weight:800}
+.notification-add{background:#245e4e;color:#a7ffdb;border:1px solid #3d8971}
+.notification-ignore{background:#26354b;color:#b0c6de;border:1px solid #39516e}
+#notificationCount{font-size:11px;color:#8bedc8}
+@media(max-width:380px){.tab{font-size:11px;padding:10px 1px}.notification-actions{grid-template-columns:1fr}.notification-actions button{width:100%}}
