@@ -110,4 +110,28 @@ class FinanceRepositoryTest {
         assertEquals(0, database.financeDao().transactions().size)
         assertEquals(10000L, balance(card))
     }
+
+    @Test
+    fun renamingKeepsBalancesAndLedgerLinks() {
+        val card = addAccount("Карта", "BYN", "100,00")
+        val transactionId = addOperation("expense", "4,31", card)
+        val snapshot = repository.renameAccount(card, "Основная карта")
+        val renamed = snapshot.getJSONArray("accounts").getJSONObject(0)
+        assertEquals("Основная карта", renamed.getString("name"))
+        assertEquals(9569L, renamed.getLong("balanceMinor"))
+        assertEquals("BYN", renamed.getString("currency"))
+        assertEquals(transactionId, snapshot.getJSONArray("transactions").getJSONObject(0).getString("id"))
+        assertEquals(card, snapshot.getJSONArray("transactions").getJSONObject(0).getString("accountId"))
+    }
+
+    @Test
+    fun balanceOverflowRollsBackLedgerWrite() {
+        val card = addAccount("Большой счёт", "BYN", "90071992547409,90")
+        try {
+            addOperation("income", "0,02", card)
+            fail("Unsafe balance must not be recorded")
+        } catch (_: IllegalArgumentException) { }
+        assertEquals(0, database.financeDao().allTransactionsForBackup().size)
+        assertEquals(9_007_199_254_740_990L, balance(card))
+    }
 }
