@@ -38,7 +38,8 @@ class BackupCodec(private val database: FinanceDatabase) {
     }
 
     @Synchronized
-    fun exportJson(): String {
+    fun exportJson(): String = database.runInTransaction {
+        // All three tables must belong to the same database snapshot.
         val accounts = JSONArray()
         for (a in dao.accounts()) accounts.put(
             JSONObject().put("id", a.id).put("name", a.name).put("currency", a.currency)
@@ -66,12 +67,16 @@ class BackupCodec(private val database: FinanceDatabase) {
             .put("transactions", transactions)
             .put("notifications", notifications)
             .toString()
-        return JSONObject()
+        val archive = JSONObject()
             .put("format", format)
             .put("exportedAt", System.currentTimeMillis())
             .put("sha256", sha256(payload))
             .put("payload", payload)
             .toString(2)
+        require(archive.toByteArray(Charsets.UTF_8).size <= 25_000_000) {
+            "Архив слишком большой для безопасного восстановления"
+        }
+        archive
     }
 
     /**
