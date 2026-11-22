@@ -34,6 +34,15 @@ class BankPushParserTest {
         assertEquals(123456L, suggestion.amountMinor)
     }
 
+    @Test fun refundOfPurchaseIsAnIncome() {
+        val suggestion = BankPushParser.suggest(
+            alfa, "Возврат покупки", "Возврат оплаты 7,20 BYN"
+        )
+        assertNotNull(suggestion)
+        assertEquals("income", suggestion!!.kind)
+        assertEquals(720L, suggestion.amountMinor)
+    }
+
     @Test fun balanceIsNotUsedAsPaymentAmount() {
         val suggestion = BankPushParser.suggest(
             alfa, "Оплата", "Покупка 8,50 BYN; Остаток 200,31 BYN"
