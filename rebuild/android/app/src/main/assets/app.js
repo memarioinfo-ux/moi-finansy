@@ -161,6 +161,12 @@ $("exportBackup").onclick=()=>{
 };
 $("importBackup").onclick=()=>{
  try{
+  // A preflight guard helps avoid opening the picker unnecessarily.
+  // The authoritative empty-only check remains in BackupCodec inside a DB transaction.
+  if(state.accounts.length || state.transactions.length){
+    toast("Импорт разрешён только в пустую базу: текущие данные останутся без изменений");
+    return;
+  }
   if(!window.FinanceNative?.importBackup)throw Error("Восстановление доступно только в Android");
   window.FinanceNative.importBackup();
  }catch(e){toast(e.message);}
@@ -173,26 +179,3 @@ window.onNativeBackupEvent=(type,message)=>{
 };
 try{refresh();}catch(e){toast("Ошибка загрузки: "+e.message);}
 
-window.onNativeBackupEvent = (type, message) => {
-  toast(message);
-  if (type === "imported") {
-    try { refresh(); } catch (error) { toast(error.message); }
-  }
-};
-$("exportBackup").onclick = () => {
-  try {
-    if (!window.FinanceNative?.exportBackup) throw Error("Недоступно в этой версии");
-    window.FinanceNative.exportBackup();
-  } catch (error) { toast(error.message); }
-};
-$("importBackup").onclick = () => {
-  if (state.accounts.length || state.transactions.length) {
-    toast("Восстановление доступно только в пустую базу. Ваши текущие данные не будут заменены.");
-    return;
-  }
-  if (!confirm("Загрузить ранее сохранённую копию? Содержимое будет проверено до сохранения.")) return;
-  try {
-    if (!window.FinanceNative?.importBackup) throw Error("Недоступно в этой версии");
-    window.FinanceNative.importBackup();
-  } catch (error) { toast(error.message); }
-};
