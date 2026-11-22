@@ -13,6 +13,21 @@ class BankNotificationPolicyTest {
         ))
     }
 
+    @Test fun ignoresPureBalanceUpdatesAndBankPromotions() {
+        assertFalse(BankNotificationPolicy.isAllowed(
+            "by.alfabank.app.insnc3", "Баланс карты", "Остаток 200,31 BYN"
+        ))
+        assertFalse(BankNotificationPolicy.isAllowed(
+            "by.softclub.belarusbank", "Акция", "Получите скидку 5 BYN"
+        ))
+    }
+
+    @Test fun supportsAmountWithoutCurrencyWhenTransactionActionIsExplicit() {
+        assertTrue(BankNotificationPolicy.isAllowed(
+            "by.softclub.belarusbank", "Mbank", "Покупка на сумму 12,35"
+        ))
+    }
+
     @Test fun rejectsUnrelatedApplicationsAndAuthenticationMessages() {
         assertFalse(BankNotificationPolicy.isAllowed(
             "org.telegram.messenger", "Чат", "Покупка 12,35 BYN"
