@@ -3,6 +3,8 @@
     <!-- Intentionally NO INTERNET permission and NO notification access in MVP. -->
     <application
         android:allowBackup="false"
+        android:icon="@drawable/ic_finance"
+        android:roundIcon="@drawable/ic_finance"
         android:label="Мои финансы · Тест"
         android:usesCleartextTraffic="false"
         android:theme="@style/FinanceTheme"
